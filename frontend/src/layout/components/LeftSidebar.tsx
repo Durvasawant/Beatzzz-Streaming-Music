@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { SignedIn } from "@clerk/clerk-react";
-import { HomeIcon, Library, Search, TrendingUp } from "lucide-react";
+import { HomeIcon, Library, Music2, Search, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -114,6 +114,18 @@ const LeftSidebar = () => {
 
 				<ScrollArea className='h-[calc(100vh-300px)]'>
 					<div className='space-y-2'>
+						<Link
+							to='/library'
+							className='p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer'
+						>
+							<div className='size-12 rounded-md shrink-0 bg-gradient-to-br from-emerald-400 to-green-700 flex items-center justify-center'>
+								<Music2 className='size-5 text-black' />
+							</div>
+							<div className='flex-1 min-w-0 hidden md:block'>
+								<p className='font-medium truncate'>Spotify Top Hits</p>
+								<p className='text-sm text-zinc-400 truncate'>Playlist • all songs</p>
+							</div>
+						</Link>
 						{isLoading ? (
 							<PlaylistSkeleton />
 						) : (

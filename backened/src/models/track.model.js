@@ -21,6 +21,7 @@ const trackSchema = new mongoose.Schema(
 		spotifyArtists: String,
 		coverUrl: String,
 		spotifyUrl: String,
+		durationMs: Number,
 		spotifyChecked: { type: Boolean, default: false }, // true = we asked Spotify already
 	},
 	{ timestamps: true }

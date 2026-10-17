@@ -15,6 +15,7 @@ import songRoutes from "./routes/song.route.js";
 import albumRoutes from "./routes/album.route.js";
 import statRoutes from "./routes/stat.route.js";
 import trackRoutes from "./routes/track.route.js";
+import spotifyRoutes from "./routes/spotify.route.js";
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use("/api/songs", songRoutes);
 app.use("/api/albums", albumRoutes);
 app.use("/api/stats", statRoutes);
 app.use("/api/tracks", trackRoutes);
+app.use("/api/spotify", spotifyRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

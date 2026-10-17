@@ -3,31 +3,26 @@ import { Music, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { axiosInstance } from "@/lib/axios";
-
-interface TrackResult {
-	_id: string;
-	title: string;
-	artists: string;
-	releasedYear?: number;
-	streams?: number | null;
-	coverUrl: string | null;
-	spotifyId: string | null;
-	spotifyUrl: string | null;
-}
+import { trackToSong, type TrackResult } from "@/lib/tracks";
+import { usePlayerStore } from "@/stores/usePlayerStore";
+import type { Song } from "@/types";
 
 const formatStreams = (n?: number | null) => (n ? `${(n / 1_000_000).toFixed(0)}M streams` : "");
 
 const SearchPage = () => {
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<TrackResult[]>([]);
-	const [selected, setSelected] = useState<TrackResult | null>(null);
+	const [tracks, setTracks] = useState<TrackResult[]>([]);
+	const [originals, setOriginals] = useState<Song[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [notice, setNotice] = useState<string | null>(null);
+
+	const { currentSong, playAlbum } = usePlayerStore();
 
 	// wait 400 ms after typing stops, then search
 	useEffect(() => {
 		if (query.trim().length < 2) {
-			setResults([]);
+			setTracks([]);
+			setOriginals([]);
 			setNotice(null);
 			return;
 		}
@@ -35,12 +30,13 @@ const SearchPage = () => {
 			setLoading(true);
 			try {
 				const res = await axiosInstance.get("/tracks/search", { params: { q: query.trim() } });
-				setResults(res.data.tracks);
+				setTracks(res.data.tracks);
+				setOriginals(res.data.songs ?? []);
 				setNotice(
 					res.data.spotifyError
 						? `Spotify lookup failed: ${res.data.spotifyError}`
 						: !res.data.spotify
-						? "Spotify keys are not set in backened/.env, so songs cannot be played yet."
+						? "Spotify keys are not set in backened/.env, so Spotify songs cannot be played yet."
 						: null
 				);
 			} catch {
@@ -51,6 +47,34 @@ const SearchPage = () => {
 		}, 400);
 		return () => clearTimeout(timer);
 	}, [query]);
+
+	// the whole result list becomes the queue, so "next" in the bottom bar goes to the next result
+	const queue: Song[] = [...originals.map((s) => ({ ...s, source: "local" as const })), ...tracks.map(trackToSong)];
+	const play = (id: string) => playAlbum(queue, queue.findIndex((s) => s._id === id));
+
+	const Row = ({ song, meta }: { song: Song; meta?: string }) => (
+		<button
+			onClick={() => play(song._id)}
+			className={`w-full flex items-center gap-3 p-2 rounded-md text-left hover:bg-zinc-700/50 ${
+				currentSong?._id === song._id ? "bg-zinc-700/60" : ""
+			}`}
+		>
+			{song.imageUrl && !song.imageUrl.startsWith("data:") ? (
+				<img src={song.imageUrl} alt='' className='size-12 rounded object-cover' />
+			) : (
+				<div className='size-12 rounded bg-zinc-700 flex items-center justify-center'>
+					<Music className='size-5 text-zinc-400' />
+				</div>
+			)}
+			<div className='min-w-0 flex-1'>
+				<p className={`truncate font-medium ${currentSong?._id === song._id ? "text-green-400" : ""}`}>{song.title}</p>
+				<p className='truncate text-sm text-zinc-400'>{song.artist}</p>
+			</div>
+			{meta && <span className='hidden sm:block text-xs text-zinc-500'>{meta}</span>}
+		</button>
+	);
+
+	const nothing = !loading && query.trim().length >= 2 && tracks.length === 0 && originals.length === 0 && !notice;
 
 	return (
 		<div className='h-full rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-900'>
@@ -70,67 +94,30 @@ const SearchPage = () => {
 					</div>
 
 					{notice && <p className='text-sm text-amber-400'>{notice}</p>}
+					{loading && <p className='text-sm text-zinc-400'>Searching...</p>}
+					{nothing && <p className='text-sm text-zinc-400'>No songs found for “{query}”.</p>}
 
-					{selected && (
-						<div className='max-w-xl space-y-2'>
-							{selected.spotifyId ? (
-								<iframe
-									key={selected.spotifyId}
-									title={selected.title}
-									src={`https://open.spotify.com/embed/track/${selected.spotifyId}?utm_source=generator&theme=0`}
-									width='100%'
-									height='152'
-									style={{ borderRadius: 12, border: 0 }}
-									allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'
-									loading='lazy'
-								/>
-							) : (
-								<a
-									className='text-emerald-400 underline text-sm'
-									target='_blank'
-									rel='noreferrer'
-									href={`https://open.spotify.com/search/${encodeURIComponent(`${selected.title} ${selected.artists}`)}`}
-								>
-									Not linked to Spotify yet - open a Spotify search for "{selected.title}"
-								</a>
-							)}
-							<p className='text-xs text-zinc-500'>
-								Log in to Spotify in this browser to hear the full song; otherwise you get a 30-second preview.
-							</p>
+					{originals.length > 0 && (
+						<div className='space-y-1 max-w-3xl'>
+							<h2 className='text-sm font-semibold text-zinc-300'>Beatzzz Originals</h2>
+							{originals.map((s) => (
+								<Row key={s._id} song={s} />
+							))}
 						</div>
 					)}
 
-					{loading && <p className='text-sm text-zinc-400'>Searching...</p>}
-					{!loading && query.trim().length >= 2 && results.length === 0 && !notice && (
-						<p className='text-sm text-zinc-400'>No songs found in the database for "{query}".</p>
+					{tracks.length > 0 && (
+						<div className='space-y-1 max-w-3xl'>
+							<h2 className='text-sm font-semibold text-zinc-300'>Spotify Top Hits</h2>
+							{tracks.map((t) => (
+								<Row
+									key={t._id}
+									song={trackToSong(t)}
+									meta={`${t.releasedYear ?? ""} ${formatStreams(t.streams) && `· ${formatStreams(t.streams)}`}`}
+								/>
+							))}
+						</div>
 					)}
-
-					<div className='space-y-1 max-w-3xl'>
-						{results.map((t) => (
-							<button
-								key={t._id}
-								onClick={() => setSelected(t)}
-								className={`w-full flex items-center gap-3 p-2 rounded-md text-left hover:bg-zinc-700/50 ${
-									selected?._id === t._id ? "bg-zinc-700/60" : ""
-								}`}
-							>
-								{t.coverUrl ? (
-									<img src={t.coverUrl} alt='' className='size-12 rounded object-cover' />
-								) : (
-									<div className='size-12 rounded bg-zinc-700 flex items-center justify-center'>
-										<Music className='size-5 text-zinc-400' />
-									</div>
-								)}
-								<div className='min-w-0 flex-1'>
-									<p className='truncate font-medium'>{t.title}</p>
-									<p className='truncate text-sm text-zinc-400'>{t.artists}</p>
-								</div>
-								<span className='hidden sm:block text-xs text-zinc-500'>
-									{t.releasedYear} {formatStreams(t.streams) && `· ${formatStreams(t.streams)}`}
-								</span>
-							</button>
-						))}
-					</div>
 				</div>
 			</ScrollArea>
 		</div>

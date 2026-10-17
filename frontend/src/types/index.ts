@@ -8,6 +8,9 @@ export interface Song {
 	duration: number;
 	createdAt: string;
 	updatedAt: string;
+	// Spotify-dataset songs (played through Spotify instead of an audio file)
+	source?: "local" | "spotify";
+	spotifyId?: string | null;
 }
 
 export interface Album {

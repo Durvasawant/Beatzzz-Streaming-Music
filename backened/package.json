@@ -8,7 +8,8 @@
     "seed": "node src/seeds/albums.js",
     "seed:songs": "node src/seeds/songs.js",
     "seed:albums": "node src/seeds/albums.js",
-    "seed:spotify": "node src/seeds/spotifyTracks.js"
+    "seed:spotify": "node src/seeds/spotifyTracks.js",
+    "enrich:spotify": "node src/seeds/enrichSpotify.js"
   },
   "keywords": [],
   "type": "module",
