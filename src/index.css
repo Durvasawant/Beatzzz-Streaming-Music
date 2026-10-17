@@ -1,0 +1,527 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+    --radius: 0.625rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+}
+
+.bar {
+  width: 3px;
+  height: 6px;
+  background: linear-gradient(to top, #10b981, #6ee7b7);
+  border-radius: 999px;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+.bar.delay-1 {
+  animation-delay: 0.2s;
+}
+
+.bar.delay-2 {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    height: 4px;
+    opacity: 0.6;
+  }
+  50% {
+    height: 14px;
+    opacity: 1;
+  }
+}
+/* 🔥 FLOWING WAVE */
+.wave-path {
+  fill: none;
+  stroke: url(#waveGradient);
+  stroke-width: 3;
+  stroke-linecap: round;
+
+  filter: drop-shadow(0 0 8px #22c55e);
+
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+
+  animation: flowWave 2.5s linear infinite;
+}
+
+@keyframes flowWave {
+  0% {
+    stroke-dashoffset: 600;
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.2;
+  }
+}
+
+/* 🔥 MUSIC BARS */
+.bar {
+  width: 3px;
+  height: 6px;
+  background: linear-gradient(to top, #10b981, #6ee7b7);
+  border-radius: 999px;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+.bar.delay-1 {
+  animation-delay: 0.2s;
+}
+
+.bar.delay-2 {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    height: 4px;
+    opacity: 0.6;
+  }
+  50% {
+    height: 14px;
+    opacity: 1;
+  }
+}
+/* 🌊 WAVES */
+.wave {
+  fill: none;
+  stroke: url(#waveGradient);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 10px #22c55e);
+
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+}
+
+.wave1 {
+  animation: flowWave 3s linear infinite;
+}
+
+.wave2 {
+  animation: flowWave 4s linear infinite;
+  opacity: 0.6;
+}
+
+.wave3 {
+  animation: flowWave 5s linear infinite;
+  opacity: 0.3;
+}
+
+@keyframes flowWave {
+  0% {
+    stroke-dashoffset: 600;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* ✨ PARTICLES */
+.particle {
+  position: absolute;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  background: #4ade80;
+  border-radius: 50%;
+  filter: blur(1px);
+  opacity: 0.7;
+}
+
+.p1 { right: 20px; animation: floatUp 4s linear infinite; }
+.p2 { right: 40px; animation: floatUp 5s linear infinite; }
+.p3 { right: 60px; animation: floatUp 6s linear infinite; }
+.p4 { right: 30px; animation: floatUp 3.5s linear infinite; }
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  80% { opacity: 0.8; }
+  100% {
+    transform: translateY(-300px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* 🎵 MUSIC BARS */
+.bar {
+  width: 3px;
+  height: 6px;
+  background: linear-gradient(to top, #10b981, #6ee7b7);
+  border-radius: 999px;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+.bar.delay-1 { animation-delay: 0.2s; }
+.bar.delay-2 { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 100% {
+    height: 4px;
+    opacity: 0.6;
+  }
+  50% {
+    height: 14px;
+    opacity: 1;
+  }
+}
+
+.beatzzz-text {
+  color: #22c55e;
+
+  /* ✨ Multi-layer glow */
+  text-shadow:
+    0 0 6px #22c55e,
+    0 0 12px #22c55e,
+    0 0 24px #4ade80,
+    0 0 40px rgba(74, 222, 128, 0.6);
+
+  /* 💫 Smooth breathing animation */
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* 🔥 Pulse animation */
+@keyframes glowPulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow:
+      0 0 6px #22c55e,
+      0 0 12px #1f6e3c,
+      0 0 24px #054a1e,
+      0 0 40px rgba(74, 222, 128, 0.6);
+  }
+
+  50% {
+    transform: scale(1.08);
+    text-shadow:
+      0 0 10px #022710,
+      0 0 20px #045d25,
+      0 0 40px #042c13,
+      0 0 60px rgba(9, 81, 35, 0.9);
+  }
+}.beatzzz-text {
+  color: #22c55e;
+
+  /* ✨ Multi-layer glow */
+  text-shadow:
+    0 0 6px #04200e,
+    0 0 12px #22c55e,
+    0 0 24px #4ade80,
+    0 0 40px rgba(10, 75, 34, 0.6);
+
+  /* 💫 Smooth breathing animation */
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* 🔥 Pulse animation */
+@keyframes glowPulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow:
+      0 0 6px #22c55e,
+      0 0 12px #1f5834,
+      0 0 24px #054f20,
+      0 0 40px rgba(8, 79, 34, 0.6);
+  }
+
+  50% {
+    transform: scale(1.08);
+    text-shadow:
+      0 0 10px #072b14,
+      0 0 20px #045622,
+      0 0 40px #22c55e,
+      0 0 60px rgba(4, 60, 24, 0.9);
+  }
+}.left-wave {
+  fill: none;
+  stroke: url(#leftWave);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+
+  filter: drop-shadow(0 0 12px #22c55e);
+
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+
+  animation: leftFlow linear infinite;
+
+  /* 🔥 HARD STOP BEFORE SONGS */
+  mask-image: linear-gradient(
+    to top,
+    black 0%,
+    black 38%,     /* visible */
+    transparent 60%  /* cut before playlist */
+  );
+}
+
+.wave1 { animation-duration: 4s; }
+.wave2 { animation-duration: 5.5s; opacity: 0.5; }
+
+@keyframes leftFlow {
+  0% {
+    stroke-dashoffset: 700;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* 🟢 DOTS */
+.dot {
+  position: absolute;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px #22c55e);
+
+  animation: floatDot linear infinite;
+
+  /* same stop */
+  mask-image: linear-gradient(
+    to top,
+    black 0%,
+    black 38%,
+    transparent 60%
+  );
+}
+
+.d1 { left: 6px; animation-duration: 4s; }
+.d2 { left: 24px; animation-duration: 5s; }
+.d3 { left: 42px; animation-duration: 6s; }
+
+@keyframes floatDot {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  100% {
+    transform: translateY(-260px);
+    opacity: 0;
+  }
+}
+
+/* 🌊 BASE WAVE */
+.wave {
+  fill: none;
+  stroke: url(#waveGradient);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  filter: drop-shadow(0 0 10px #22c55e);
+
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+
+  animation: flowWave linear infinite;
+
+  /* ✨ SMOOTH FADE OUT */
+  mask-image: linear-gradient(
+    to top,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 40%,
+    rgba(0,0,0,0.6) 60%,
+    rgba(0,0,0,0) 85%
+  );
+}
+
+/* depth */
+.wave1 { animation-duration: 4s; }
+.wave2 { animation-duration: 5.5s; opacity: 0.6; }
+
+/* 🌊 ANIMATION */
+@keyframes flowWave {
+  0% {
+    stroke-dashoffset: 700;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+/* 💚 smoother premium pulse (better than animate-pulse) */
+.play-pulse {
+  animation: playPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes playPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(20, 65, 36, 0.6),
+      0 0 20px rgba(34,197,94,0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(16, 94, 45, 0.9),
+      0 0 35px rgba(34,197,94,0.4);
+  }
+}
+/* 💚 minimal elegant glow */
+.beatzzz-text {
+  color: #22c55e;
+
+  text-shadow:
+    0 0 3px rgba(34,197,94,0.4),
+    0 0 8px rgba(34,197,94,0.2);
+
+  animation: softBreath 4s ease-in-out infinite;
+}
+
+@keyframes softBreath {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.015);
+  }
+}
+.beatzzz-text {
+  color: #22f66f;
+  text-shadow: 0 0 1px rgba(6, 79, 33, 0.25);
+}
