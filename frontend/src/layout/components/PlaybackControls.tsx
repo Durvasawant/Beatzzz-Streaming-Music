@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { usePlayerStore } from "@/stores/usePlayerStore";
-import { Laptop2, ListMusic, Mic2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume1 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Laptop2, ListMusic, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume1 } from "lucide-react";
+import { useState } from "react";
+import { playerControls } from "@/lib/playerControls";
+import { connectSpotify, disconnectSpotify, useSpotifyConnected } from "@/lib/spotifyAuth";
 
 const formatTime = (seconds: number) => {
 	const minutes = Math.floor(seconds / 60);
@@ -11,43 +13,15 @@ const formatTime = (seconds: number) => {
 };
 
 const PlaybackControls = () => {
- const {currentSong,isPlaying,togglePlay,playNext,playPrevious} = usePlayerStore();
- 
- const [volume,setVolume] = useState(75);
- const[currentTime,setCurrentTime] = useState(0);
- const[duration,setDuration] = useState(0);
- const audioRef = useRef<HTMLAudioElement | null>(null);
+	const { currentSong, isPlaying, togglePlay, playNext, playPrevious, currentTime, duration: audioDuration } = usePlayerStore();
+	const [volume, setVolume] = useState(75);
+	const spotifyConnected = useSpotifyConnected();
 
- useEffect(() => {
-    audioRef.current = document.querySelector('audio');
-    const audio= audioRef.current;
-    if(!audio) return;
+	// Spotify songs know their length from the dataset before playback starts
+	const duration = audioDuration || currentSong?.duration || 0;
+	const isSpotifySong = currentSong?.source === "spotify";
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-
-
-    audio.addEventListener('timeupdate',updateTime);
-    audio.addEventListener('loadedmetadata',updateDuration);
-
-
-        const handleEnded = () => {
-            usePlayerStore.setState({isPlaying:false});
-        }
-
-    audio.addEventListener('ended',handleEnded);
-
-
-
-
- },[ currentSong]);
-
- const handleSeek = (value:number[]) => {
-    if(audioRef.current){
-    audioRef.current.currentTime = value[0];
-    }
- }
-
+	const handleSeek = (value: number[]) => playerControls.seek(value[0]);
 
     return <footer className='h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4'>
         <div className='flex justify-between items-center h-full max-w-[1800px] mx-auto'>
@@ -136,9 +110,25 @@ const PlaybackControls = () => {
 				</div>
                 {/* volume controls */}
 				<div className='hidden sm:flex items-center gap-4 min-w-[180px] w-[30%] justify-end'>
-					<Button size='icon' variant='ghost' className='hover:text-white text-zinc-400'>
-						<Mic2 className='h-4 w-4' />
-					</Button>
+					{spotifyConnected ? (
+						<Button
+							size='sm'
+							variant='ghost'
+							title='Click to disconnect Spotify'
+							onClick={disconnectSpotify}
+							className='text-xs text-emerald-400 hover:text-emerald-300'
+						>
+							Spotify connected
+						</Button>
+					) : (
+						<Button
+							size='sm'
+							onClick={connectSpotify}
+							className={`text-xs bg-emerald-500 hover:bg-emerald-400 text-black ${isSpotifySong ? "animate-pulse" : ""}`}
+						>
+							Connect Spotify
+						</Button>
+					)}
 					<Button size='icon' variant='ghost' className='hover:text-white text-zinc-400'>
 						<ListMusic className='h-4 w-4' />
 					</Button>
@@ -157,9 +147,7 @@ const PlaybackControls = () => {
 							className='w-24 hover:cursor-grab active:cursor-grabbing'
 							onValueChange={(value) => {
 								setVolume(value[0]);
-								if (audioRef.current) {
-									audioRef.current.volume = value[0] / 100;
-								}
+								playerControls.setVolume(value[0]);
 							}}
 						/>
 					</div>
