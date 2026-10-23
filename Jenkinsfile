@@ -11,7 +11,7 @@ pipeline {
         stage('Verify Tools') {
             steps {
                 sh '''
-                    export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+                    export PATH="/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
                     echo "Checking installed tools..."
                     git --version
