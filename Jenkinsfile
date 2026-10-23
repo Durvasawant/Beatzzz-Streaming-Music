@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -84,17 +83,83 @@ pipeline {
                 }
             }
         }
+
+        stage('Trigger Airflow Pipeline') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'airflow-api-credentials',
+                    usernameVariable: 'AF_USER',
+                    passwordVariable: 'AF_PASS'
+                )]) {
+                    sh '''
+                        set +x
+                        set -eu
+
+                        AIRFLOW_URL="http://localhost:8081"
+                        DAG_ID="beatzzz_spotify_pipeline"
+                        RESPONSE_FILE=$(mktemp)
+                        trap 'rm -f "$RESPONSE_FILE"; unset TOKEN' EXIT
+
+                        echo "Requesting Airflow API token..."
+
+                        TOKEN=$(AF_USER="$AF_USER" AF_PASS="$AF_PASS" python3 -c '
+import json, os
+print(json.dumps({
+    "username": os.environ["AF_USER"],
+    "password": os.environ["AF_PASS"]
+}))
+' | curl -fsS -X POST "$AIRFLOW_URL/auth/token" 
+                            -H "Content-Type: application/json" 
+                            -d @- 
+                            | python3 -c '
+import json, sys
+print(json.load(sys.stdin).get("access_token", ""))
+')
+
+                        if [ -z "$TOKEN" ]; then
+                            echo "ERROR: Airflow did not return an API token."
+                            exit 1
+                        fi
+
+                        echo "Triggering Airflow DAG: $DAG_ID"
+
+                        curl -fsS -X POST \
+                            "$AIRFLOW_URL/api/v2/dags/$DAG_ID/dagRuns" \
+                            -H "Authorization: Bearer $TOKEN" \
+                            -H "Content-Type: application/json" \
+                            -d '{"logical_date":null,"conf":{},"note":"Triggered by Jenkins CI"}' \
+                            -o "$RESPONSE_FILE"
+
+                        RUN_ID=$(python3 -c '
+import json, sys
+print(json.load(open(sys.argv[1])).get("dag_run_id", ""))
+' "$RESPONSE_FILE")
+
+                        if [ -z "$RUN_ID" ]; then
+                            echo "ERROR: Airflow did not return a DAG run ID."
+                            cat "$RESPONSE_FILE"
+                            exit 1
+                        fi
+
+                        echo "Airflow DAG run created successfully."
+                        echo "DAG ID: $DAG_ID"
+                        echo "Run ID: $RUN_ID"
+                        echo "Monitor the run at $AIRFLOW_URL"
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Beatzzz CI checks passed.'
+            echo 'Beatzzz CI checks and Airflow trigger completed successfully.'
         }
         unstable {
-            echo 'Beatzzz CI checks completed with warnings or lint issues.'
+            echo 'Beatzzz CI checks completed with warnings or lint issues; Airflow was triggered.'
         }
         failure {
-            echo 'Beatzzz CI checks failed. Check the stage logs.'
+            echo 'Beatzzz CI or Airflow trigger failed. Check the stage logs.'
         }
     }
 }
