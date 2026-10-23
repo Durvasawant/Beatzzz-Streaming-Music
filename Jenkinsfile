@@ -109,6 +109,7 @@ pipeline {
 
                         RESPONSE_FILE=$(mktemp)
                         REQUEST_FILE=$(mktemp)
+                        TOKEN=""
 
                         trap 'rm -f "$RESPONSE_FILE" "$REQUEST_FILE"; unset TOKEN AF_PASS' EXIT
 
@@ -140,9 +141,9 @@ with open(os.environ["REQUEST_FILE"], "w") as f:
                         unset AF_PASS
                         rm -f "$REQUEST_FILE"
 
-                        if [ "$TOKEN_HTTP" != "200" ]; then
-                            echo "ERROR: Airflow token request returned HTTP $TOKEN_HTTP"
-                            cat "$RESPONSE_FILE"
+                        if [ "$TOKEN_HTTP" != "200" ] && [ "$TOKEN_HTTP" != "201" ]; then
+                            echo "ERROR: Airflow token request returned HTTP $TOKEN_HTTP."
+                            echo "Response body suppressed to protect credentials."
                             exit 1
                         fi
 
@@ -155,12 +156,12 @@ with open(sys.argv[1]) as f:
 ' "$RESPONSE_FILE")
 
                         if [ -z "$TOKEN" ]; then
-                            echo "ERROR: Airflow did not return an API token."
+                            echo "ERROR: Airflow returned no access token."
                             exit 1
                         fi
 
-                        echo "Token received successfully."
-                        echo "Checking Airflow DAG access..."
+                        echo "Airflow authentication successful."
+                        echo "Checking DAG access..."
 
                         DAG_HTTP=$(curl -sS \
                             -o "$RESPONSE_FILE" \
@@ -169,8 +170,8 @@ with open(sys.argv[1]) as f:
                             "$AIRFLOW_URL/api/v2/dags/$DAG_ID")
 
                         if [ "$DAG_HTTP" != "200" ]; then
-                            echo "ERROR: DAG access returned HTTP $DAG_HTTP"
-                            cat "$RESPONSE_FILE"
+                            echo "ERROR: DAG access returned HTTP $DAG_HTTP."
+                            echo "Response body suppressed."
                             exit 1
                         fi
 
@@ -187,8 +188,8 @@ with open(sys.argv[1]) as f:
                             -d '{"logical_date":null,"conf":{},"note":"Triggered by Jenkins CI"}')
 
                         if [ "$RUN_HTTP" != "200" ] && [ "$RUN_HTTP" != "201" ]; then
-                            echo "ERROR: DAG trigger returned HTTP $RUN_HTTP"
-                            cat "$RESPONSE_FILE"
+                            echo "ERROR: DAG trigger returned HTTP $RUN_HTTP."
+                            echo "Response body suppressed."
                             exit 1
                         fi
 
@@ -201,14 +202,14 @@ with open(sys.argv[1]) as f:
 ' "$RESPONSE_FILE")
 
                         if [ -z "$RUN_ID" ]; then
-                            echo "ERROR: Airflow did not return a DAG run ID."
+                            echo "ERROR: Airflow returned no DAG run ID."
                             exit 1
                         fi
 
                         echo "Airflow DAG run created successfully."
                         echo "DAG ID: $DAG_ID"
                         echo "Run ID: $RUN_ID"
-                        echo "Monitor at $AIRFLOW_URL"
+                        echo "Airflow URL: $AIRFLOW_URL"
                     '''
                 }
             }
