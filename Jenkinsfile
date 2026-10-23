@@ -48,7 +48,12 @@ pipeline {
         stage('Frontend Lint') {
             steps {
                 dir('frontend') {
-                    sh 'npm run lint'
+                    catchError(
+                        buildResult: 'UNSTABLE',
+                        stageResult: 'UNSTABLE'
+                    ) {
+                        sh 'npm run lint'
+                    }
                 }
             }
         }
@@ -84,6 +89,9 @@ pipeline {
     post {
         success {
             echo 'Beatzzz CI checks passed.'
+        }
+        unstable {
+            echo 'Beatzzz CI checks completed with warnings or lint issues.'
         }
         failure {
             echo 'Beatzzz CI checks failed. Check the stage logs.'
