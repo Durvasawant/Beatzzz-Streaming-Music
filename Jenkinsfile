@@ -98,12 +98,14 @@ pipeline {
                         AIRFLOW_URL="http://localhost:8081"
                         DAG_ID="beatzzz_spotify_pipeline"
                         RESPONSE_FILE=$(mktemp)
-                        trap 'rm -f "$RESPONSE_FILE"; unset TOKEN' EXIT
+                        trap 'rm -f "$RESPONSE_FILE"; unset TOKEN AF_PASS' EXIT
 
                         echo "Requesting Airflow API token..."
 
                         TOKEN_HTTP=$(AF_USER="$AF_USER" AF_PASS="$AF_PASS" python3 -c '
-import json, os
+import json
+import os
+
 print(json.dumps({
     "username": os.environ["AF_USER"],
     "password": os.environ["AF_PASS"]
@@ -115,16 +117,21 @@ print(json.dumps({
                             -H "Content-Type: application/json" 
                             -d @-)
 
+                        unset AF_PASS
+
                         if [ "$TOKEN_HTTP" != "200" ]; then
-                            echo "ERROR: Airflow token endpoint returned HTTP $TOKEN_HTTP"
+                            echo "ERROR: Airflow token request returned HTTP $TOKEN_HTTP"
                             echo "Response body:"
                             cat "$RESPONSE_FILE"
                             exit 1
                         fi
 
                         TOKEN=$(python3 -c '
-import json, sys
-print(json.load(open(sys.argv[1])).get("access_token", ""))
+import json
+import sys
+
+with open(sys.argv[1]) as response:
+    print(json.load(response).get("access_token", ""))
 ' "$RESPONSE_FILE")
 
                         if [ -z "$TOKEN" ]; then
@@ -132,8 +139,23 @@ print(json.load(open(sys.argv[1])).get("access_token", ""))
                             exit 1
                         fi
 
-                        echo "Airflow API authentication succeeded."
-                        echo "Triggering Airflow DAG: $DAG_ID"
+                        echo "Token received successfully."
+                        echo "Checking Airflow DAG access..."
+
+                        DAG_HTTP=$(curl -sS \
+                            -o "$RESPONSE_FILE" \
+                            -w "%{http_code}" \
+                            -H "Authorization: Bearer $TOKEN" \
+                            "$AIRFLOW_URL/api/v2/dags/$DAG_ID")
+
+                        if [ "$DAG_HTTP" != "200" ]; then
+                            echo "ERROR: DAG access returned HTTP $DAG_HTTP"
+                            cat "$RESPONSE_FILE"
+                            exit 1
+                        fi
+
+                        echo "Airflow DAG verified: $DAG_ID"
+                        echo "Triggering Airflow DAG..."
 
                         RUN_HTTP=$(curl -sS \
                             -o "$RESPONSE_FILE" \
@@ -145,15 +167,18 @@ print(json.load(open(sys.argv[1])).get("access_token", ""))
                             -d '{"logical_date":null,"conf":{},"note":"Triggered by Jenkins CI"}')
 
                         if [ "$RUN_HTTP" != "200" ] && [ "$RUN_HTTP" != "201" ]; then
-                            echo "ERROR: Airflow DAG trigger returned HTTP $RUN_HTTP"
+                            echo "ERROR: DAG trigger returned HTTP $RUN_HTTP"
                             echo "Response body:"
                             cat "$RESPONSE_FILE"
                             exit 1
                         fi
 
                         RUN_ID=$(python3 -c '
-import json, sys
-print(json.load(open(sys.argv[1])).get("dag_run_id", ""))
+import json
+import sys
+
+with open(sys.argv[1]) as response:
+    print(json.load(response).get("dag_run_id", ""))
 ' "$RESPONSE_FILE")
 
                         if [ -z "$RUN_ID" ]; then
