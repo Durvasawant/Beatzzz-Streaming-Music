@@ -12,9 +12,16 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Verify Tools') {
             steps {
                 sh '''
+                    set -eu
                     echo "Checking installed tools..."
                     git --version
                     node --version
@@ -27,6 +34,7 @@ pipeline {
         stage('Check Project Structure') {
             steps {
                 sh '''
+                    set -eu
                     test -d frontend
                     test -d backened
                     test -f frontend/package-lock.json
@@ -77,6 +85,7 @@ pipeline {
             steps {
                 dir('backened') {
                     sh '''
+                        set -eu
                         node --check src/index.js
                         echo "Backend syntax check passed."
                     '''
@@ -97,31 +106,42 @@ pipeline {
 
                         AIRFLOW_URL="http://localhost:8081"
                         DAG_ID="beatzzz_spotify_pipeline"
+
                         RESPONSE_FILE=$(mktemp)
-                        trap 'rm -f "$RESPONSE_FILE"; unset TOKEN AF_PASS' EXIT
+                        REQUEST_FILE=$(mktemp)
 
-                        echo "Requesting Airflow API token..."
+                        trap 'rm -f "$RESPONSE_FILE" "$REQUEST_FILE"; unset TOKEN AF_PASS' EXIT
 
-                        TOKEN_HTTP=$(AF_USER="$AF_USER" AF_PASS="$AF_PASS" python3 -c '
+                        echo "Preparing Airflow authentication request..."
+
+                        export AF_USER AF_PASS REQUEST_FILE
+
+                        python3 -c '
 import json
 import os
 
-print(json.dumps({
-    "username": os.environ["AF_USER"],
-    "password": os.environ["AF_PASS"]
-}))
-' | curl -sS 
-                            -o "$RESPONSE_FILE" 
-                            -w "%{http_code}" 
-                            -X POST "$AIRFLOW_URL/auth/token" 
-                            -H "Content-Type: application/json" 
-                            -d @-)
+with open(os.environ["REQUEST_FILE"], "w") as f:
+    json.dump({
+        "username": os.environ["AF_USER"],
+        "password": os.environ["AF_PASS"]
+    }, f)
+'
+
+                        echo "Requesting Airflow API token..."
+
+                        TOKEN_HTTP=$(curl -sS \
+                            -o "$RESPONSE_FILE" \
+                            -w "%{http_code}" \
+                            -X POST \
+                            "$AIRFLOW_URL/auth/token" \
+                            -H "Content-Type: application/json" \
+                            --data-binary "@$REQUEST_FILE")
 
                         unset AF_PASS
+                        rm -f "$REQUEST_FILE"
 
                         if [ "$TOKEN_HTTP" != "200" ]; then
                             echo "ERROR: Airflow token request returned HTTP $TOKEN_HTTP"
-                            echo "Response body:"
                             cat "$RESPONSE_FILE"
                             exit 1
                         fi
@@ -130,8 +150,8 @@ print(json.dumps({
 import json
 import sys
 
-with open(sys.argv[1]) as response:
-    print(json.load(response).get("access_token", ""))
+with open(sys.argv[1]) as f:
+    print(json.load(f).get("access_token", ""))
 ' "$RESPONSE_FILE")
 
                         if [ -z "$TOKEN" ]; then
@@ -168,7 +188,6 @@ with open(sys.argv[1]) as response:
 
                         if [ "$RUN_HTTP" != "200" ] && [ "$RUN_HTTP" != "201" ]; then
                             echo "ERROR: DAG trigger returned HTTP $RUN_HTTP"
-                            echo "Response body:"
                             cat "$RESPONSE_FILE"
                             exit 1
                         fi
@@ -177,8 +196,8 @@ with open(sys.argv[1]) as response:
 import json
 import sys
 
-with open(sys.argv[1]) as response:
-    print(json.load(response).get("dag_run_id", ""))
+with open(sys.argv[1]) as f:
+    print(json.load(f).get("dag_run_id", ""))
 ' "$RESPONSE_FILE")
 
                         if [ -z "$RUN_ID" ]; then
@@ -189,7 +208,7 @@ with open(sys.argv[1]) as response:
                         echo "Airflow DAG run created successfully."
                         echo "DAG ID: $DAG_ID"
                         echo "Run ID: $RUN_ID"
-                        echo "Monitor the run at $AIRFLOW_URL"
+                        echo "Monitor at $AIRFLOW_URL"
                     '''
                 }
             }
@@ -200,11 +219,17 @@ with open(sys.argv[1]) as response:
         success {
             echo 'Beatzzz CI checks and Airflow trigger completed successfully.'
         }
+
         unstable {
-            echo 'Beatzzz CI checks completed with warnings or lint issues; Airflow was triggered.'
+            echo 'Beatzzz pipeline completed with warnings or lint issues.'
         }
+
         failure {
             echo 'Beatzzz CI or Airflow trigger failed. Check the stage logs.'
+        }
+
+        always {
+            echo 'Beatzzz pipeline execution finished.'
         }
     }
 }
