@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -7,12 +8,14 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    environment {
+        PATH = "/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    }
+
     stages {
         stage('Verify Tools') {
             steps {
                 sh '''
-                    export PATH="/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-
                     echo "Checking installed tools..."
                     git --version
                     node --version
@@ -27,8 +30,53 @@ pipeline {
                 sh '''
                     test -d frontend
                     test -d backened
-                    echo "Beatzzz frontend and backend folders found."
+                    test -f frontend/package-lock.json
+                    test -f backened/package-lock.json
+                    echo "Project structure verified."
                 '''
+            }
+        }
+
+        stage('Frontend Install') {
+            steps {
+                dir('frontend') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Frontend Lint') {
+            steps {
+                dir('frontend') {
+                    sh 'npm run lint'
+                }
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('frontend') {
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Backend Install') {
+            steps {
+                dir('backened') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Backend Validation') {
+            steps {
+                dir('backened') {
+                    sh '''
+                        node --check src/index.js
+                        echo "Backend syntax check passed."
+                    '''
+                }
             }
         }
     }
@@ -38,7 +86,7 @@ pipeline {
             echo 'Beatzzz CI checks passed.'
         }
         failure {
-            echo 'Beatzzz CI checks failed. Check the console output.'
+            echo 'Beatzzz CI checks failed. Check the stage logs.'
         }
     }
 }
