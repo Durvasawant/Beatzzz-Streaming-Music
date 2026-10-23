@@ -102,33 +102,54 @@ pipeline {
 
                         echo "Requesting Airflow API token..."
 
-                        TOKEN=$(AF_USER="$AF_USER" AF_PASS="$AF_PASS" python3 -c '
+                        TOKEN_HTTP=$(AF_USER="$AF_USER" AF_PASS="$AF_PASS" python3 -c '
 import json, os
 print(json.dumps({
     "username": os.environ["AF_USER"],
     "password": os.environ["AF_PASS"]
 }))
-' | curl -fsS -X POST "$AIRFLOW_URL/auth/token" 
+' | curl -sS 
+                            -o "$RESPONSE_FILE" 
+                            -w "%{http_code}" 
+                            -X POST "$AIRFLOW_URL/auth/token" 
                             -H "Content-Type: application/json" 
-                            -d @- 
-                            | python3 -c '
+                            -d @-)
+
+                        if [ "$TOKEN_HTTP" != "200" ]; then
+                            echo "ERROR: Airflow token endpoint returned HTTP $TOKEN_HTTP"
+                            echo "Response body:"
+                            cat "$RESPONSE_FILE"
+                            exit 1
+                        fi
+
+                        TOKEN=$(python3 -c '
 import json, sys
-print(json.load(sys.stdin).get("access_token", ""))
-')
+print(json.load(open(sys.argv[1])).get("access_token", ""))
+' "$RESPONSE_FILE")
 
                         if [ -z "$TOKEN" ]; then
                             echo "ERROR: Airflow did not return an API token."
                             exit 1
                         fi
 
+                        echo "Airflow API authentication succeeded."
                         echo "Triggering Airflow DAG: $DAG_ID"
 
-                        curl -fsS -X POST \
+                        RUN_HTTP=$(curl -sS \
+                            -o "$RESPONSE_FILE" \
+                            -w "%{http_code}" \
+                            -X POST \
                             "$AIRFLOW_URL/api/v2/dags/$DAG_ID/dagRuns" \
                             -H "Authorization: Bearer $TOKEN" \
                             -H "Content-Type: application/json" \
-                            -d '{"logical_date":null,"conf":{},"note":"Triggered by Jenkins CI"}' \
-                            -o "$RESPONSE_FILE"
+                            -d '{"logical_date":null,"conf":{},"note":"Triggered by Jenkins CI"}')
+
+                        if [ "$RUN_HTTP" != "200" ] && [ "$RUN_HTTP" != "201" ]; then
+                            echo "ERROR: Airflow DAG trigger returned HTTP $RUN_HTTP"
+                            echo "Response body:"
+                            cat "$RESPONSE_FILE"
+                            exit 1
+                        fi
 
                         RUN_ID=$(python3 -c '
 import json, sys
@@ -137,7 +158,6 @@ print(json.load(open(sys.argv[1])).get("dag_run_id", ""))
 
                         if [ -z "$RUN_ID" ]; then
                             echo "ERROR: Airflow did not return a DAG run ID."
-                            cat "$RESPONSE_FILE"
                             exit 1
                         fi
 
